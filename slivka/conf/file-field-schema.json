@@ -21,7 +21,8 @@
             ]
           }
         },
-        "max-size": {"type": "string", "pattern": "^\\d+\\s*(|K|M|G|T)B$"}
+        "max-size": {"type": "string", "pattern": "^\\d+\\s*(|K|M|G|T)B$"},
+        "condition": {"type": "string"}
       },
       "required": ["type"],
       "additionalProperties": false

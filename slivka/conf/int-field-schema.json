@@ -12,7 +12,8 @@
         "multiple": {"type": "boolean"},
         "min": {"type": "integer"},
         "max": {"type": "integer"},
-        "default": {"type": "integer"}
+        "default": {"type": "integer"},
+        "condition": {"type": "string"}
       },
       "required": ["type"],
       "additionalProperties": false

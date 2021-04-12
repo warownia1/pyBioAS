@@ -1,4 +1,5 @@
-from nose.tools import assert_equal, raises, assert_is, assert_is_none, assert_true, assert_false, assert_list_equal
+from nose.tools import assert_equal, raises, assert_is_none, assert_true, \
+    assert_false, assert_list_equal
 from werkzeug.datastructures import MultiDict
 
 from slivka.server.forms.fields import BaseField, ValidationError
@@ -30,7 +31,7 @@ def test_get_value_from_data():
         'myfield': 'myvalue',
         'gamma': 'foobar'
     })
-    assert_equal(field.value_from_request_data(data, {}), 'myvalue')
+    assert_equal(field.fetch_value(data, {}), 'myvalue')
 
 
 def test_get_missing_value_from_data():
@@ -40,7 +41,7 @@ def test_get_missing_value_from_data():
         'beta': -0.53,
         'gamma': 'foobar'
     })
-    assert_is_none(field.value_from_request_data(data, {}))
+    assert_is_none(field.fetch_value(data, {}))
 
 
 def test_validate_valid_value():
@@ -68,7 +69,7 @@ def test_validate_missing_not_required_value():
 
 def test_validate_with_default_value():
     field = BaseFieldStub('name', default='value')
-    assert_equal(field.validate(None), 'value')
+    assert_equal(field.validate(None), None)
     assert_equal(field.validate('other value'), 'other value')
 
 
@@ -100,17 +101,12 @@ def test_false_to_cmd_parameter():
 def test_get_multiple_value_from_data():
     field = BaseField('name', multiple=True)
     data = MultiDict([('name', 'a'), ('name', 'b')])
-    assert_list_equal(
-        field.value_from_request_data(data, MultiDict()),
-        ['a', 'b']
-    )
+    assert_list_equal(field.fetch_value(data, MultiDict()), ['a', 'b'])
 
 
 def test_multiple_missing_value_from_data():
     field = BaseField('name', multiple=True)
-    assert_list_equal(
-        field.value_from_request_data(MultiDict(), MultiDict()), []
-    )
+    assert_list_equal(field.fetch_value(MultiDict(), MultiDict()), [])
 
 
 def test_validate_multiple_valid_values():
@@ -126,8 +122,8 @@ def test_validate_multiple_no_values():
 
 def test_validate_multiple_with_default():
     field = BaseFieldStub('name', multiple=True, default='default')
-    assert_equal(field.validate(None), ['default'])
-    assert_equal(field.validate([]), ['default'])
+    assert_equal(field.validate(None), None)
+    assert_equal(field.validate([]), None)
 
 
 @raises(ValidationError)

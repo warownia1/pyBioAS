@@ -9,7 +9,8 @@
       "properties": {
         "type": {"type": "string"},
         "required": {"type": "boolean"},
-        "multiple": {"type": "boolean"}
+        "multiple": {"type": "boolean"},
+        "condition": {"type": "string"}
       },
       "required": ["type"]
     }

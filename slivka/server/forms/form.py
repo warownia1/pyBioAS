@@ -1,5 +1,5 @@
 import collections
-from collections import OrderedDict
+from collections import OrderedDict, ChainMap
 from importlib import import_module
 from typing import Optional
 from typing import Type
@@ -106,19 +106,50 @@ class BaseForm(metaclass=DeclarativeFormMetaclass):
 
         .. seealso:: methods of :py:class:`fields.BaseField`
         """
-        errors = {}
         if not self.is_bound:
             return
-        cleaned_data = {}
-        for name, field in self.fields.items():
-            value = field.value_from_request_data(self.data, self.files)
+        errors = {}
+        default_values = {
+            field.name: field.default for field in self.fields.values()
+        }
+        provided_values = {}
+        for field in self.fields.values():
+            value = field.fetch_value(self.data, self.files)
             try:
                 value = field.validate(value)
-                cleaned_data[name] = value
+                if value is not None:
+                    provided_values[field.name] = value
             except ValidationError as err:
                 errors[field.name] = err
+        if errors:
+            self._errors = frozendict(errors)
+            return
+        disabled_fields = []
+        values = ChainMap(provided_values, default_values)
+        for field in self.fields.values():
+            if values[field.name] is not None and not field.test_condition(
+                    values):
+                if field.name in provided_values:
+                    error = ValidationError(
+                        "Additional condition not met", 'condition')
+                    errors[field.name] = error
+                else:
+                    disabled_fields.append(field.name)
+        if errors:
+            self._errors = frozendict(errors)
+            return
+        # TODO: is second pass necessary if no fields were disabled?
+        for name in disabled_fields:
+            default_values[name] = None
+        for field in self.fields.values():
+            if values[field.name] is not None and not field.test_condition(
+                    values):
+                error = ValidationError(
+                    "Additional condition not met", 'condition')
+                errors[field.name] = error
         self._errors = frozendict(errors)
-        self._cleaned_data = frozendict(cleaned_data)
+        if not errors:
+            self._cleaned_data = frozendict(values)
 
     def __iter__(self):
         return iter(self.fields.values())
@@ -193,7 +224,8 @@ class FormLoader(metaclass=Singleton):
             'description': field_dict.get('description'),
             'default': value_dict.get('default'),
             'required': value_dict.get('required', True),
-            'multiple': value_dict.get('multiple', False)
+            'multiple': value_dict.get('multiple', False),
+            'condition': value_dict.get('condition')
         }
         if field_type == 'int' or field_type == 'integer':
             return IntegerField(

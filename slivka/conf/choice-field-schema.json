@@ -15,7 +15,8 @@
           "type": "object",
           "minProperties": 1,
           "additionalProperties": true
-        }
+        },
+        "condition": {"type": "string"}
       },
       "required": ["type"],
       "additionalProperties": false

@@ -1,12 +1,12 @@
 import enum
 import fcntl
+import functools
+import itertools
 import os
 import sys
 import warnings
 from collections import OrderedDict
 
-import functools
-import itertools
 import yaml.resolver
 
 try:

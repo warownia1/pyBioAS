@@ -11,7 +11,7 @@ from werkzeug.datastructures import FileStorage, MultiDict
 import slivka
 import slivka.db
 import slivka.server.forms.file_validators as validators
-from slivka.utils import cached_property, class_property
+from slivka.utils import cached_property, class_property, expression_parser
 from .file_proxy import FileProxy, _get_file_from_uuid
 from .widgets import *
 
@@ -50,7 +50,7 @@ class BaseField:
     :param name: the name of the field
     :param label: human readable name/label
     :param description: longer, human readable description
-    :param default: defualt value for the field
+    :param default: default value for the field
     :param required: whether the field is required
     :param multiple: whether the field accepts multiple values
     """
@@ -61,19 +61,22 @@ class BaseField:
                  description='',
                  default=None,
                  required=True,
-                 multiple=False):
+                 multiple=False,
+                 condition=None):
         self.name = name
         self.label = label
         self.description = description
         self.default = default
-        self.required = required
+        self.required = required and default is None
         self.multiple = multiple
+        self.condition = (None if condition is None
+                          else expression_parser.Expression(condition))
         self._widget = None
 
     schema = class_property(lambda cls: {})
     """Json schema for the field item in the config file."""
 
-    def value_from_request_data(self, data: MultiDict, files: MultiDict):
+    def fetch_value(self, data: MultiDict, files: MultiDict):
         """
         Retrieves value from the request data. This value will
         be further passed to the validation method. The deriving
@@ -112,8 +115,8 @@ class BaseField:
         Used by form during :py:meth:`BaseForm.full_clean`to check
         and convert the data from the HTTP request.
         Performs the validation of the value obtained form
-        :py:meth:`value_from_request_data` and returns the value
-        converted to the Python type or default if none was provided.
+        :py:meth:`fetch_value` and returns the value
+        converted to the appropriate Python type.
         It takes care of arrays by validating each value individually.
 
         This method is final and must not be overridden!
@@ -124,18 +127,15 @@ class BaseField:
         """
         if not self.multiple:
             value = self.run_validation(value)
-            if value is None:
-                if self.default is not None:
-                    return self.default
-                elif self.required:
-                    raise ValidationError("Field is required", 'required')
+            if value is None and self.required:
+                raise ValidationError("Field is required", 'required')
             return value
         else:
-            if not value:
-                if self.default is not None:
-                    return [self.default]
-                elif self.required:
+            if value is None or len(value) == 0:
+                if self.required:
                     raise ValidationError("Field is required", 'required')
+                else:
+                    return None
             return [self.run_validation(v) for v in value]
 
     def _validate_default(self):
@@ -151,6 +151,14 @@ class BaseField:
                 self.run_validation(self.default)
             except ValidationError as e:
                 raise RuntimeError("Invalid default value") from e
+
+    def test_condition(self, values):
+        if self.condition:
+            return self.condition.evaluate({
+                'self': values[self.name], **values
+            })
+        else:
+            return True
 
     def serialize_value(self, value):
         if value is None:
@@ -513,7 +521,7 @@ class FileField(BaseField):
 
     save_location = cached_property(lambda self: slivka.settings.uploads_dir)
 
-    def value_from_request_data(self, data: MultiDict, files: MultiDict):
+    def fetch_value(self, data: MultiDict, files: MultiDict):
         if self.multiple:
             return files.getlist(self.name) + data.getlist(self.name)
         else:

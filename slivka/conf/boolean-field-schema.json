@@ -10,7 +10,8 @@
         "type": {"enum": ["boolean", "flag"]},
         "required": {"type": "boolean"},
         "multiple": {"type": "boolean"},
-        "default": {"type": "boolean"}
+        "default": {"type": "boolean"},
+        "condition": {"type": "string"}
       },
       "required": ["type"],
       "additionalProperties": false

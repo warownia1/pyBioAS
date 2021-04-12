@@ -1,17 +1,17 @@
 import contextlib
 import os.path
 from unittest import mock
-
-import mongomock
 from unittest.mock import sentinel
 
+import mongomock
 from nose import with_setup
-from nose.tools import eq_, assert_equal, assert_list_equal, assert_set_equal, raises, assert_raises
+from nose.tools import assert_equal, assert_list_equal, assert_set_equal, \
+    raises, assert_raises
 from werkzeug.datastructures import MultiDict, FileStorage
 
-from slivka.server.forms.fields import FileField, ValidationError
 import slivka.db
 from slivka.db.documents import UploadedFile
+from slivka.server.forms.fields import FileField, ValidationError
 from slivka.server.forms.file_proxy import FileProxy
 from slivka.server.forms.file_validators import ValidatorDict
 
@@ -39,20 +39,20 @@ def test_value_from_multipart():
     field = FileField('test')
     data = MultiDict()
     files = MultiDict({'test': sentinel.file})
-    assert_equal(field.value_from_request_data(data, files), sentinel.file)
+    assert_equal(field.fetch_value(data, files), sentinel.file)
 
 
 def test_value_from_data():
     field = FileField('test')
     data = MultiDict({'test': 'deadbeef'})
-    assert_equal(field.value_from_request_data(data, MultiDict()), 'deadbeef')
+    assert_equal(field.fetch_value(data, MultiDict()), 'deadbeef')
 
 
 def test_multiple_files():
     field = FileField('test', multiple=True)
     data = MultiDict([('test', 'c0ffee'), ('test', 'f00ba4')])
     assert_list_equal(
-        field.value_from_request_data(data, MultiDict()),
+        field.fetch_value(data, MultiDict()),
         ['c0ffee', 'f00ba4']
     )
 
@@ -62,7 +62,7 @@ def test_multiple_fields_mixed():
     data = MultiDict([('test', 'c0ffee'), ('test', 'f00ba4')])
     files = MultiDict({'test': sentinel.file})
     assert_set_equal(
-        set(field.value_from_request_data(data, files)),
+        set(field.fetch_value(data, files)),
         {'c0ffee', 'f00ba4', sentinel.file}
     )
 

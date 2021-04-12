@@ -14,7 +14,8 @@
         "max": {"type": "number"},
         "min-exclusive": {"type": "boolean"},
         "max-exclusive": {"type": "boolean"},
-        "default": {"type": "number"}
+        "default": {"type": "number"},
+        "condition": {"type": "string"}
       },
       "required": ["type"],
       "additionalProperties": false
