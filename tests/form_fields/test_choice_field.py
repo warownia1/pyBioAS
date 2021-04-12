@@ -5,11 +5,11 @@ from nose.tools import assert_equal, assert_list_equal, assert_is_none
 
 from slivka.server.forms.fields import ChoiceField, ValidationError
 
-
 CHOICES = [
     ('foo', 'FOO'),
     ('bar', 'BAR'),
-    ('baz', 'BAZ')
+    ('baz', 'BAZ'),
+    ('void', None)
 ]
 
 
@@ -112,6 +112,7 @@ def test_to_cmd_parameter():
     assert_equal(field.to_cmd_parameter('foo'), 'FOO')
     assert_equal(field.to_cmd_parameter('BAZ'), 'BAZ')
     assert_equal(field.to_cmd_parameter('missing'), 'missing')
+    assert_is_none(field.to_cmd_parameter('void'))
 
 
 def test_serialize_multiple():
